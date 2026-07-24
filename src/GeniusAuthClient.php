@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Http;
 
 class GeniusAuthClient
 {
-    public function redirect(?Request $request = null): RedirectResponse
+    public function redirect(?Request $request = null, ?string $redirectUri = null): RedirectResponse
     {
         $request ??= request();
         $state = $this->randomValue(32);
@@ -22,7 +22,7 @@ class GeniusAuthClient
 
         return redirect()->away($discovery['authorization_endpoint'].'?'.http_build_query([
             'client_id' => config('geniusauth.client_id'),
-            'redirect_uri' => config('geniusauth.redirect_uri'),
+            'redirect_uri' => $redirectUri ?? config('geniusauth.redirect_uri'),
             'response_type' => 'code',
             'scope' => implode(' ', config('geniusauth.scopes')),
             'state' => $state,
@@ -32,7 +32,7 @@ class GeniusAuthClient
         ]));
     }
 
-    public function handleCallback(Request $request): array
+    public function handleCallback(Request $request, ?string $redirectUri = null): array
     {
         if ($request->filled('error')) {
             abort(401, (string) $request->query('error'));
@@ -45,7 +45,7 @@ class GeniusAuthClient
             'grant_type' => 'authorization_code',
             'client_id' => config('geniusauth.client_id'),
             'client_secret' => config('geniusauth.client_secret'),
-            'redirect_uri' => config('geniusauth.redirect_uri'),
+            'redirect_uri' => $redirectUri ?? config('geniusauth.redirect_uri'),
             'code' => $data['code'],
             'code_verifier' => $pending['verifier'],
         ]));

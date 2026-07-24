@@ -127,7 +127,73 @@ User                Laravel              GeniusAuth
  │────────────────────►│                     │
 ```
 
-## 🛣️ Registered routes
+## 🛣️ Identity Linking
+
+The SDK includes built-in support for **bidirectional identity linking** between your application and GeniusAuth. This lets users connect their GeniusAuth account to your app from either side.
+
+### How it works
+
+```
+GeniusAuth connected-apps page          Your app (via SDK)
+        │                                     │
+        │  User clicks "Link"                 │
+        │────────────────────────────────────►│  GET /geniusauth/link?state=xxx&return_url=yyy
+        │                                     │  Session stores link_pending
+        │                                     │  User not signed in? → redirect to GeniusAuth OIDC login
+        │                                     │  User signed in? → sync to GeniusAuth API
+        │  302 return_url?status=success      │
+        │◄────────────────────────────────────│
+        │  Link marked as "Linked"            │
+```
+
+### Configuration
+
+Add these to your `.env`:
+
+```dotenv
+GENIUSAUTH_SYNC_API_KEY=your_sync_api_key
+```
+
+The `sync_api_key` is generated when you register your app in GeniusAuth. It authenticates calls to the `POST /api/sync` endpoint.
+
+### Registered routes
+
+The SDK automatically adds these routes for linking:
+
+| Method | URI | Name | Description |
+| --- | --- | --- | --- |
+| `GET` | `/geniusauth/link` | `geniusauth.link` | Receives the redirect from GeniusAuth, stores state, authenticates user if needed |
+| `GET` | `/auth/genius/link/complete` | `geniusauth.link.complete` | Post-OIDC-callback handler that completes a pending link |
+
+### Usage
+
+#### From GeniusAuth (user initiates on connected-apps page)
+
+GeniusAuth redirects to your app's `link_url` (configured in the GeniusAuth dashboard). The SDK handles everything automatically — no code needed.
+
+#### From your app (user initiates locally)
+
+```php
+use GeniusAuth\Laravel\Facades\GeniusAuthLink;
+
+// Sync the current OIDC user to GeniusAuth
+$result = GeniusAuthLink::syncToGeniusAuth(
+    externalUserId: '123',
+    phone: '+2250701020304',
+    email: 'user@example.com',
+    name: 'Alice',
+    phoneVerified: true,
+);
+
+// Look up a user by GeniusID
+$user = GeniusAuthLink::lookupByGeniusId('@2250701020304');
+```
+
+### Custom link URL
+
+By default the SDK registers `/geniusauth/link`. To use a custom controller instead, set `GENIUSAUTH_LINK_URL` in your `.env` and register your own route. The GeniusAuth dashboard should point to whatever URL you configure.
+
+
 
 The package automatically registers these routes:
 
@@ -144,6 +210,9 @@ The package automatically registers these routes:
 | `GeniusAuth::redirect()` | `RedirectResponse` | Starts OAuth 2.1 Authorization Code flow with PKCE |
 | `GeniusAuth::user()` | `array\|null` | Returns the session-backed authenticated identity |
 | `GeniusAuth::logout()` | `void` | Clears GeniusAuth tokens and invalidates the session |
+| `GeniusAuthLink::syncToGeniusAuth(...)` | `array` | Syncs a local user to GeniusAuth via API |
+| `GeniusAuthLink::lookupByGeniusId($id)` | `array\|null` | Looks up a GeniusAuth user by GeniusID |
+| `GeniusAuthLink::handleLinkRequest($request)` | `RedirectResponse` | Handles incoming link redirect from GeniusAuth |
 
 ### Example: Complete controller
 
