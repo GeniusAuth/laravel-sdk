@@ -1,25 +1,20 @@
 {
   "name": "geniusauth/laravel",
-  "description": "Official Laravel client SDK for GeniusAuth OpenID Connect.",
+  "description": "Official Laravel SDK for GeniusAuth OpenID Connect authentication.",
   "keywords": ["authentication", "laravel", "oauth2", "oidc", "openid-connect", "passkeys", "webauthn"],
-  "homepage": "https://auth.geniuspay.tech",
-  "license": "proprietary",
+  "homepage": "https://docs.geniusauth.com",
+  "license": "MIT",
   "authors": [
     {
       "name": "GENIUS GROUPS SAS",
-      "homepage": "https://auth.geniuspay.tech"
+      "homepage": "https://geniusauth.com"
     }
   ],
   "support": {
-    "issues": "https://github.com/geniusauth/laravel-sdk/issues",
-    "source": "https://github.com/geniusauth/laravel-sdk"
+    "docs": "https://docs.geniusauth.com/laravel",
+    "issues": "https://github.com/GeniusAuth/laravel-sdk/issues",
+    "source": "https://github.com/GeniusAuth/laravel-sdk"
   },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/geniusauth/laravel-sdk"
-    }
-  ],
   "type": "library",
   "require": {
     "php": "^8.3",
@@ -29,13 +24,34 @@
     "illuminate/routing": "^11.0|^12.0",
     "illuminate/support": "^11.0|^12.0"
   },
+  "require-dev": {
+    "larastan/larastan": "^3.7",
+    "orchestra/testbench": "^9.0|^10.0",
+    "phpstan/phpstan": "^2.1",
+    "laravel/pint": "^1.24",
+    "phpunit/phpunit": "^11.0"
+  },
   "autoload": {
     "psr-4": {
       "GeniusAuth\\Laravel\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "GeniusAuth\\Laravel\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "analyse": "phpstan analyse --memory-limit=1G",
+    "lint": "pint --test",
+    "test": "phpunit",
+    "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-clover build/logs/clover.xml"
+  },
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
   },
   "extra": {
     "laravel": {
@@ -46,6 +62,6 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "archive": {
-    "exclude": ["/.github", "/tests", "/.gitignore", "/phpunit.xml"]
+    "exclude": ["/.github", "/tests", "/.gitignore", "/phpunit.xml", "/phpstan.neon", "/pint.json"]
   }
 }

@@ -1,7 +1,9 @@
 /vendor
+/composer.lock
 /.phpunit.cache
 /.phpunit.result.cache
-coverage
+/coverage
+/build
 *.log
 .DS_Store
 .env
