@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: packagist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: shivammathur/setup-php@v2
