@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Http;
 
 class GeniusAuthClient
 {
-    public function redirect(Request $request): RedirectResponse
+    public function redirect(?Request $request = null): RedirectResponse
     {
+        $request ??= request();
         $state = $this->randomValue(32);
         $nonce = $this->randomValue(32);
         $verifier = $this->randomValue(64);
@@ -58,13 +59,14 @@ class GeniusAuthClient
         return $user;
     }
 
-    public function user(Request $request): ?array
+    public function user(?Request $request = null): ?array
     {
-        return $request->session()->get(config('geniusauth.session_key'));
+        return ($request ?? request())->session()->get(config('geniusauth.session_key'));
     }
 
-    public function logout(Request $request): void
+    public function logout(?Request $request = null): void
     {
+        $request ??= request();
         $request->session()->forget([config('geniusauth.session_key'), 'geniusauth.tokens']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();

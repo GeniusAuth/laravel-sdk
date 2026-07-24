@@ -1,19 +1,41 @@
 {
-  "name": "geniusauth/laravel-geniusauth",
-  "description": "Laravel client SDK for GeniusAuth OpenID Connect",
-  "type": "library",
+  "name": "geniusauth/laravel",
+  "description": "Official Laravel client SDK for GeniusAuth OpenID Connect.",
+  "keywords": ["authentication", "laravel", "oauth2", "oidc", "openid-connect", "passkeys", "webauthn"],
+  "homepage": "https://auth.geniuspay.tech",
   "license": "proprietary",
+  "authors": [
+    {
+      "name": "GENIUS GROUPS SAS",
+      "homepage": "https://auth.geniuspay.tech"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/geniusauth/laravel-sdk/issues",
+    "source": "https://github.com/geniusauth/laravel-sdk"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/geniusauth/laravel-sdk"
+    }
+  ],
+  "type": "library",
   "require": {
     "php": "^8.3",
     "firebase/php-jwt": "^6.11",
     "illuminate/contracts": "^11.0|^12.0",
     "illuminate/http": "^11.0|^12.0",
+    "illuminate/routing": "^11.0|^12.0",
     "illuminate/support": "^11.0|^12.0"
   },
   "autoload": {
     "psr-4": {
       "GeniusAuth\\Laravel\\": "src/"
     }
+  },
+  "config": {
+    "sort-packages": true
   },
   "extra": {
     "laravel": {
@@ -22,5 +44,8 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "archive": {
+    "exclude": ["/.github", "/tests", "/.gitignore", "/phpunit.xml"]
+  }
 }

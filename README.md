@@ -32,19 +32,18 @@ composer require geniusauth/laravel
 ## Publish
 
 ```bash
-php artisan vendor:publish
+php artisan vendor:publish --tag=geniusauth-config
 ```
 
 ---
 
 ## Configuration
 
-```php
+```dotenv
+GENIUSAUTH_ISSUER=https://auth.geniuspay.tech
 GENIUSAUTH_CLIENT_ID=
-
 GENIUSAUTH_CLIENT_SECRET=
-
-GENIUSAUTH_REDIRECT_URI=
+GENIUSAUTH_REDIRECT_URI=https://app.example.com/auth/genius/callback
 ```
 
 ---
@@ -69,13 +68,14 @@ $user = GeniusAuth::user();
 
 - Laravel Native
 - Middleware
-- Authentication Guards
+- Route middleware
+- Authorization Code + PKCE
 - OAuth 2.1
 - OpenID Connect
 - Passkeys
 - WebAuthn
 - Session Management
-- Automatic Refresh Tokens
+- ID token validation through JWKS
 
 ---
 

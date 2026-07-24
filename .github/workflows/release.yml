@@ -1,0 +1,46 @@
+name: Release Packagist package
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: packagist-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: packagist
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+      - run: composer validate --strict
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: find src config routes -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+      - name: Notify Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          if [ -z "$PACKAGIST_USERNAME" ] || [ -z "$PACKAGIST_TOKEN" ]; then
+            echo "Packagist API credentials are not configured; relying on the Packagist GitHub webhook."
+            exit 0
+          fi
+          curl --fail --silent --show-error --request POST \
+            --data-urlencode "repository=https://github.com/geniusauth/laravel-sdk" \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}"
