@@ -1,16 +1,30 @@
 <?php
 
-namespace GeniusAuth\Laravel;
+declare(strict_types=1);
 
-use Firebase\JWT\JWK;
-use Firebase\JWT\JWT;
+namespace GeniusAuth\Laravel\Services;
+
+use GeniusAuth\Laravel\Contracts\OidcClientInterface;
+use GeniusAuth\Laravel\Contracts\TokenValidatorInterface;
+use GeniusAuth\Laravel\DTOs\AuthenticatedUserDTO;
+use GeniusAuth\Laravel\Exceptions\OidcException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-class GeniusAuthClient
+/**
+ * Infrastructure service for the GeniusAuth OIDC Authorization Code + PKCE flow.
+ *
+ * Delegates ID token validation to TokenValidatorInterface (domain layer).
+ * Handles HTTP discovery, token exchange, and session management.
+ */
+class OidcClientService implements OidcClientInterface
 {
+    public function __construct(
+        private TokenValidatorInterface $tokenValidator,
+    ) {}
+
     public function redirect(?Request $request = null, ?string $redirectUri = null): RedirectResponse
     {
         $request ??= request();
@@ -20,7 +34,7 @@ class GeniusAuthClient
         $request->session()->put('geniusauth.pending', compact('state', 'nonce', 'verifier'));
         $discovery = $this->discovery();
 
-        return redirect()->away($discovery['authorization_endpoint'].'?'.http_build_query([
+        return redirect()->away($discovery['authorization_endpoint'] . '?' . http_build_query([
             'client_id' => config('geniusauth.client_id'),
             'redirect_uri' => $redirectUri ?? config('geniusauth.redirect_uri'),
             'response_type' => 'code',
@@ -35,11 +49,16 @@ class GeniusAuthClient
     public function handleCallback(Request $request, ?string $redirectUri = null): array
     {
         if ($request->filled('error')) {
-            abort(401, (string) $request->query('error'));
+            throw new OidcException((string) $request->query('error'));
         }
+
         $data = $request->validate(['code' => ['required', 'string'], 'state' => ['required', 'string']]);
         $pending = $request->session()->pull('geniusauth.pending');
-        abort_unless(is_array($pending) && hash_equals($pending['state'], $data['state']), 400, 'Invalid GeniusAuth state.');
+
+        if (!is_array($pending) || !hash_equals($pending['state'], $data['state'])) {
+            throw new OidcException('Invalid GeniusAuth state.');
+        }
+
         $discovery = $this->discovery();
         $response = Http::asForm()->acceptJson()->post($discovery['token_endpoint'], array_filter([
             'grant_type' => 'authorization_code',
@@ -49,14 +68,25 @@ class GeniusAuthClient
             'code' => $data['code'],
             'code_verifier' => $pending['verifier'],
         ]));
-        abort_unless($response->successful(), 401, 'GeniusAuth token exchange failed.');
+
+        if (!$response->successful()) {
+            throw new OidcException('GeniusAuth token exchange failed.');
+        }
+
         $tokens = $response->json();
-        $claims = $this->validateIdentityToken($tokens['id_token'], $discovery, $pending['nonce']);
-        $user = ['id' => $claims->sub, 'email' => $claims->email ?? null, 'name' => $claims->name ?? null, 'claims' => (array) $claims];
-        $request->session()->put(config('geniusauth.session_key'), $user);
+        $claims = $this->tokenValidator->validateIdentityToken(
+            $tokens['id_token'],
+            $discovery,
+            $pending['nonce'],
+        );
+
+        $user = AuthenticatedUserDTO::fromClaims($claims);
+        $userArray = $user->toArray();
+
+        $request->session()->put(config('geniusauth.session_key'), $userArray);
         $request->session()->put('geniusauth.tokens', $tokens);
 
-        return $user;
+        return $userArray;
     }
 
     public function user(?Request $request = null): ?array
@@ -74,25 +104,12 @@ class GeniusAuthClient
 
     private function discovery(): array
     {
-        return Cache::remember('geniusauth:discovery:'.sha1(config('geniusauth.issuer')), 3600, function (): array {
-            return Http::acceptJson()->get(rtrim(config('geniusauth.issuer'), '/').'/.well-known/openid-configuration')->throw()->json();
+        return Cache::remember('geniusauth:discovery:' . sha1(config('geniusauth.issuer')), 3600, function (): array {
+            return Http::acceptJson()
+                ->get(rtrim(config('geniusauth.issuer'), '/') . '/.well-known/openid-configuration')
+                ->throw()
+                ->json();
         });
-    }
-
-    private function validateIdentityToken(string $token, array $discovery, string $nonce): object
-    {
-        $jwks = Cache::remember('geniusauth:jwks:'.sha1($discovery['jwks_uri']), 3600, fn (): array => Http::acceptJson()->get($discovery['jwks_uri'])->throw()->json());
-        $claims = JWT::decode($token, JWK::parseKeySet($jwks));
-        abort_unless($claims->iss === config('geniusauth.issuer'), 401, 'Invalid GeniusAuth issuer.');
-        abort_unless($this->audienceMatches($claims->aud), 401, 'Invalid GeniusAuth audience.');
-        abort_unless(isset($claims->nonce) && hash_equals($nonce, $claims->nonce), 401, 'Invalid GeniusAuth nonce.');
-
-        return $claims;
-    }
-
-    private function audienceMatches(string|array $audience): bool
-    {
-        return in_array(config('geniusauth.client_id'), (array) $audience, true);
     }
 
     private function challenge(string $verifier): string

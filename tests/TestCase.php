@@ -2,7 +2,7 @@
 
 namespace GeniusAuth\Laravel\Tests;
 
-use GeniusAuth\Laravel\GeniusAuthServiceProvider;
+use GeniusAuth\Laravel\Providers\GeniusAuthServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra

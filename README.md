@@ -27,6 +27,8 @@
 - **Middleware included** — Protect routes with a single `geniusauth` middleware alias
 - **Session management** — Secure session-backed user identity with token storage
 - **Zero dependencies on passwords** — Cryptographic authentication only
+- **Domain-Driven Design** — Contracts, DTOs, Exceptions, Infrastructure, and Services in a modular architecture
+- **Interface-driven** — All services are bound to interfaces for full testability and swappability
 
 ## 📦 Installation
 
@@ -205,14 +207,26 @@ The package automatically registers these routes:
 
 ## 📚 API Reference
 
+### Facades
+
 | Method | Returns | Description |
 | --- | --- | --- |
 | `GeniusAuth::redirect()` | `RedirectResponse` | Starts OAuth 2.1 Authorization Code flow with PKCE |
 | `GeniusAuth::user()` | `array\|null` | Returns the session-backed authenticated identity |
 | `GeniusAuth::logout()` | `void` | Clears GeniusAuth tokens and invalidates the session |
-| `GeniusAuthLink::syncToGeniusAuth(...)` | `array` | Syncs a local user to GeniusAuth via API |
-| `GeniusAuthLink::lookupByGeniusId($id)` | `array\|null` | Looks up a GeniusAuth user by GeniusID |
 | `GeniusAuthLink::handleLinkRequest($request)` | `RedirectResponse` | Handles incoming link redirect from GeniusAuth |
+| `GeniusAuthLink::completeLink($request)` | `RedirectResponse\|null` | Completes a pending link after OIDC callback |
+
+### Contracts (for dependency injection)
+
+| Interface | Methods | Default implementation |
+| --- | --- | --- |
+| `OidcClientInterface` | `redirect()`, `handleCallback()`, `user()`, `logout()` | `OidcClientService` |
+| `TokenValidatorInterface` | `validateIdentityToken()` | `OidcTokenValidator` |
+| `LinkFlowInterface` | `handleLinkRequest()`, `completeLink()` | `LinkFlowService` |
+| `SyncClientInterface` | `syncToGeniusAuth()`, `lookupByGeniusId()` | `GeniusAuthSyncClient` |
+| `StaffSyncInterface` | `syncFromClaims()` | `StaffSyncService` |
+| `UserRepositoryInterface` | `findByEmailOrGeniusId()`, `create()`, `getRoleMapping()` | `ConfigUserRepository` |
 
 ### Example: Complete controller
 
@@ -242,6 +256,36 @@ class AuthController
     }
 }
 ```
+
+## 🏗️ Architecture
+
+The SDK follows a modular Domain-Driven Design (DDD) architecture:
+
+```
+src/
+├── Contracts/          # Interfaces for dependency injection
+├── DTOs/               # Immutable value objects
+├── Exceptions/         # Typed exception hierarchy
+├── Facades/            # Laravel facades (resolve to interfaces)
+├── Http/               # Controllers and middleware
+├── Infrastructure/     # External concerns (HTTP API, config-driven repos)
+├── Services/           # Domain and application services
+└── Providers/          # Service provider with bindings
+```
+
+### Extending the SDK
+
+All services are bound to interfaces. You can override any binding in your own service provider:
+
+```php
+use GeniusAuth\Laravel\Contracts\UserRepositoryInterface;
+
+$this->app->bind(UserRepositoryInterface::class, App\Repositories\GeniusAuthUserRepository::class);
+```
+
+### Backward compatibility
+
+Concrete class aliases are registered for backward compatibility but are **deprecated** and will be removed in v1.0. Inject the interface instead.
 
 ## 🔒 Security
 

@@ -2,16 +2,16 @@
 
 namespace GeniusAuth\Laravel\Http\Controllers;
 
-use GeniusAuth\Laravel\GeniusAuthClient;
-use GeniusAuth\Laravel\IdentityLinkingService;
+use GeniusAuth\Laravel\Contracts\LinkFlowInterface;
+use GeniusAuth\Laravel\Contracts\OidcClientInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class IdentityLinkController
 {
     public function __construct(
-        private IdentityLinkingService $linking,
-        private GeniusAuthClient $client,
+        private LinkFlowInterface $linking,
+        private OidcClientInterface $client,
     ) {}
 
     public function link(Request $request): RedirectResponse

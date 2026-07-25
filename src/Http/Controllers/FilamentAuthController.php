@@ -2,8 +2,8 @@
 
 namespace GeniusAuth\Laravel\Http\Controllers;
 
-use GeniusAuth\Laravel\GeniusAuthClient;
-use GeniusAuth\Laravel\Services\StaffSyncService;
+use GeniusAuth\Laravel\Contracts\OidcClientInterface;
+use GeniusAuth\Laravel\Contracts\StaffSyncInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,8 +21,8 @@ use Illuminate\Support\Facades\Config;
 class FilamentAuthController
 {
     public function __construct(
-        private GeniusAuthClient $client,
-        private StaffSyncService $staffSync,
+        private OidcClientInterface $client,
+        private StaffSyncInterface $staffSync,
     ) {}
 
     /**

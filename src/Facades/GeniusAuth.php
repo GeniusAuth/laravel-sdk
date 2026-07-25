@@ -2,13 +2,13 @@
 
 namespace GeniusAuth\Laravel\Facades;
 
-use GeniusAuth\Laravel\GeniusAuthClient;
+use GeniusAuth\Laravel\Contracts\OidcClientInterface;
 use Illuminate\Support\Facades\Facade;
 
 class GeniusAuth extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return GeniusAuthClient::class;
+        return OidcClientInterface::class;
     }
 }

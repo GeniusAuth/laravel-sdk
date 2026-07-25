@@ -2,7 +2,7 @@
 
 namespace GeniusAuth\Laravel\Facades;
 
-use GeniusAuth\Laravel\IdentityLinkingService;
+use GeniusAuth\Laravel\Contracts\LinkFlowInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -15,6 +15,6 @@ class GeniusAuthLink extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return IdentityLinkingService::class;
+        return LinkFlowInterface::class;
     }
 }
