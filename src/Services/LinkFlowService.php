@@ -55,7 +55,7 @@ class LinkFlowService implements LinkFlowInterface
 
         $user = $this->client->user($request);
 
-        if (!$user) {
+        if (!$user || auth()->guest()) {
             return redirect()->route('geniusauth.login');
         }
 
@@ -67,7 +67,7 @@ class LinkFlowService implements LinkFlowInterface
         );
 
         $result = $this->syncClient->syncToGeniusAuth(
-            $userDto->id,
+            (string) auth()->id(),
             $userDto->phone(),
             $userDto->email,
             $userDto->name,
